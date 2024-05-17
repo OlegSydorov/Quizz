@@ -1,25 +1,24 @@
-import React from 'react';
+import React, {useState} from 'react';
 import './index.css';
 
 function Question({data, onSelect}){
 
+    var colorList=[];
+    for(let i=0; i<data.answers.length; i++){
+        colorList.push("#FFFFFF");
+    }
+    const[btnColor, setBtnColor]=useState(colorList);
+
     function onAnswerClick(event){
-        
-        var children = document.getElementById("question_div"+data.id.toString()).children;
-        for (var i = 0; i < children.length; i++) {
-            var childElement=children[i];
-            childElement.style.background="#FFFFFF";
-        }
-        var button = document.getElementById(event.target.id);
-        button.style.background="#CCCCFF";
-        onSelect(data.id, event.target.value);
+        onSelect(data.id, event.target.value);     
+        setBtnColor(btnColor.map((item, index)=>item=index==event.target.id?"#CCCCFF":"#FFFFFF"));
     }
 
     return (
         <div id={"question_div"+data.id.toString()}>
             <p style={{fontWeight:"bolder"}}> {data.text}</p>
             {data.answers.map((item, index)=>
-                <button key={index} id={data.id.toString()+index.toString()} className="answer-button" type="button" onClick={onAnswerClick} value={item}>{item}</button>                
+                <button type="button" key={index} id={index} value={item} className="answer-button" style={{backgroundColor:btnColor[index]}} onClick={onAnswerClick}>{item}</button>
             )}                
         </div>
     )

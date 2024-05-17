@@ -25,7 +25,9 @@ function QuizResult(){
     return (
         <div>
             <h1>RESULTS</h1>  
-            {questionsList.map((item)=><AnsweredQuestion key={item.id} data={item}/>)}
+                {questionsList.map((item)=>
+                    <AnsweredQuestion key={item.id} data={item}/>
+                )}
             <br/>
             <div style={{backgroundColor:correctAnswers.color}} className="score-div">
                 You scored {correctAnswers.score} out of 5

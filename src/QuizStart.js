@@ -1,5 +1,5 @@
 import './index.css';
-import React, {useState, useContext, useEffect} from 'react';
+import React, {useState, useContext, useEffect, useRef} from 'react';
 import {useNavigate} from "react-router-dom";
 import Question from "./Question";
 import QuestionsContext from './Contexts';
@@ -19,29 +19,11 @@ function QuizStart(){
     const {setQuestionsList} = useContext(QuestionsContext);
 
     const navigate=useNavigate();
-    
-    useEffect(()=>{
-       if (answeredQuestions.size==5){
-        document.getElementById("answerSubmit").style.display="block";
-       } 
-    },[answeredQuestions]);   
-    
 
     useEffect(()=>{
         //console.log("categories obtain useEffect start");
         getCategories();
     },[]);
-
-    useEffect(()=>{
-        //console.log("questions obtain useEffect start");
-        if (selectionCriteria){
-            document.getElementById("createBtn").disabled=true;	
-            getQuestions(category, difficulty);
-        }
-        else{
-            document.getElementById("createBtn").disabled=false;	
-        }
-    },[selectionCriteria]);
 
     async function getCategories() {
         const response = await fetch("https://opentdb.com/api_category.php");
@@ -53,8 +35,9 @@ function QuizStart(){
 
     async function getQuestions(param1, param2){        
         const response = await fetch("https://opentdb.com/api.php?amount=5&category="+param1+"&difficulty="+param2+"&type=multiple");
-        const responseText = await response.json();
-        console.log(responseText);
+        const responseText = await response.json();       
+        console.log("ORIGINAL TEXT", responseText);
+        
         var newQuestions=[];        
         var counter=0;
         responseText["results"].map((item)=>{newQuestions.push(getQuestion(counter++, item));})
@@ -62,15 +45,46 @@ function QuizStart(){
         setQuestionsList(newQuestions);
     }
 
+    function clearString(inputString){
+        return inputString.replace(/&quot;/g, '"')
+                          .replace(/&#039;/g, "'")
+                          .replace(/&amp;/g, "&")
+                          .replace(/&lt;/g, "<")
+                          .replace(/&gt;/g, ">")
+                          .replace(/&pi;/g, "P")
+                          .replace(/&Delta;/g, "D")
+                          .replace(/&ndash;/g, "-")
+                          .replace(/&sup2;/g, "^2")
+                          .replace(/&uuml;/g, "ü")
+                          .replace(/&Uuml;/g, "Ü")
+                          .replace(/&ouml;/g, "ö")
+                          .replace(/&Ouml;/g, "Ö")
+                          .replace(/&auml;/g, "ä")
+                          .replace(/&Auml;/g, "Ä")
+                          .replace(/&agrave;/g, "à")
+                          .replace(/&acirc/g, "â")
+                          .replace(/&Acirc/g, "Â")
+                          .replace(/&egrave;/g, "è")
+                          .replace(/&eacute;/g, "é")
+                          .replace(/&ecirc/g, "ê")
+                          .replace(/&Egrave;/g, "È")                          
+                          .replace(/&Eacute;/g, "É")
+                          .replace(/&Ecirc/g, "Ê")
+                          .replace(/&ucirc;/g, "û")
+                          .replace(/&Ucirc;/g, "Û")
+                          .replace(/&ccedil;/g, "ç")
+                          .replace(/&Ccedil;/g, "Ҫ");
+    }
+
     function getQuestion(counter, rawItem){
         var id=counter;
-        var text=rawItem["question"];
-        var correctAnswer=rawItem["correct_answer"];
+        var text=clearString(rawItem["question"]);
+        var correctAnswer=clearString(rawItem["correct_answer"]);
         var selectedAnswer='';
         var answers=[];
-        answers.push(rawItem["correct_answer"]);
+        answers.push(clearString(rawItem["correct_answer"]));
         for(var a of rawItem["incorrect_answers"]){
-            answers.push(a);
+            answers.push(clearString(a));
         }
         return {id:id, text:text, correctAnswer:correctAnswer, selectedAnswer:selectedAnswer, answers:shuffleAnswers(answers)};        
     }
@@ -96,6 +110,7 @@ function QuizStart(){
     }
 
     function questionSelect(questionId, selectedItem){
+        console.log("Answer is selected: ", questionId, selectedItem);
         var newList=[];
         questionsList.map((item)=>{
             if (questionId==item.id){
@@ -110,7 +125,7 @@ function QuizStart(){
             newSet.add(s);
         }
         newSet.add(questionId);
-        //console.log("NEW SET of selected answers:", newSet);
+        console.log("NEW SET of selected answers:", newSet);
         setAnsweredQuestions(newSet);
     }
 
@@ -127,7 +142,8 @@ function QuizStart(){
             e.preventDefault();
              if (category!=0 && difficulty.length>0){
                  //console.log(category,difficulty);
-                 setSelectionCriteria(true);                 
+                 setSelectionCriteria(true);
+                 getQuestions(category, difficulty);                 
              }
             }}>
                 <select name="categorySelect" className="select-left" id="categorySelect" onChange={changeCategory}>
@@ -142,12 +158,12 @@ function QuizStart(){
                     <option value="medium">Medium</option>
                     <option value="hard">Hard</option>
                 </select>
-                <button id="createBtn" className="button-create">Create</button>
+                <button id="createBtn" className="button-create" disabled={selectionCriteria} >Create</button>
         </form>
         {questionsList.length>0 && questionsList.map((item)=>           
                 <Question key={item.id} data={item} onSelect={questionSelect}/>                
            )}
-            <button id="answerSubmit" type="button" style={{display:"none",}} className="center-button" onClick={submitAnswers}>
+            <button id="answerSubmit" type="button" style={{display:answeredQuestions.size==5?"block":"none",}} className="center-button" onClick={submitAnswers}>
                     SUBMIT
                 </button>
         </div>
